@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 # Sweeps the 24 GHz coded-metasurface FPC antenna for a full-wave-movable inverse-design
-# objective. Scaling all 96 PRS cells by a global size factor g is expected to shift the
-# Fabry-Perot resonance, so this tests whether the gain-vs-frequency peak and S11 resonance
-# move even when broadside D at 24 GHz is roughly stable.
+# objective. Scaling all 96 PRS cells by a global size factor g shifts the Fabry-Perot
+# resonance; tests whether the gain-vs-frequency peak and S11 resonance move even when
+# broadside D at 24 GHz is roughly stable.
 #
-# Reuses the directive model (SUB=24, AIRGAP=5.4, PATCH=2.8) from closure_directive.py /
-# openems_fpc.py, with NF2FF on a degree grid. For each g in {0.7,0.85,1.0,1.15,1.3}: one FDTD
-# run, broadside directivity D(f) over 20..28 GHz (17 pts), |S11|(f) over the same band, and
-# extraction of f_peak, peak-D, D@24, S11 resonance freq, -10dB BW, 1dB-gain BW. Then two
-# spatial codings (radial taper increasing/decreasing) at the same band.
+# Directive model (SUB=24, AIRGAP=5.4, PATCH=2.8) from closure_directive.py / openems_fpc.py,
+# with NF2FF on a degree grid. For each g in {0.7,0.85,1.0,1.15,1.3}: one FDTD run, broadside
+# directivity D(f) over 20..28 GHz (17 pts), |S11|(f) over the same band, and extraction of
+# f_peak, peak-D, D@24, S11 resonance freq, -10dB BW, 1dB-gain BW. Then two spatial codings
+# (radial taper increasing/decreasing) at the same band.
 #
 # Usage:
 #   python movable.py global   # the g-sweep

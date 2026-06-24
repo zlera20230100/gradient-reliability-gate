@@ -51,17 +51,15 @@ UC = np.load(os.path.join(PAPER, "_uc_ref.npz"))
 ucL = UC['L']; ucPh = UC['phase_unwrap']                     # deg
 
 def required_g_for_angle(theta0_deg):
-    """Map required per-column reflection phase phi(x)=-k0 sin(theta0) x to a per-column
-    size scale g, using the unit-cell size->phase curve. Phase referenced to broadside (g=1
-    -> base size -> some phase). Returns g (len 8), clipped to a realizable contrast."""
+    """Map required per-column reflection phase phi(x)=-k0 sin(theta0) x to a per-column size
+    scale g via the unit-cell size->phase curve. Phase referenced to broadside. Returns g (len 8)."""
     th0 = np.radians(theta0_deg)
     phi_req = -k0 * np.sin(th0) * xcol_centers               # rad
     phi_req = np.degrees(phi_req)
     phi_req = phi_req - phi_req.mean()                        # only relative gradient matters
-    # invert phase->L on the monotonic-ish portion; base L ~ mean of real cell strip is tiny,
-    # but the uc curve is defined for patch L 2..6mm. We use it as the phase-vs-size MAP and
-    # translate the needed delta-phase into a delta-size, then to a multiplicative scale g
-    # about the nominal column size.
+    # invert phase->L on the monotonic-ish portion; uc curve defined for patch L 2..6mm.
+    # Translate the needed delta-phase to a delta-size, then to a multiplicative scale g about
+    # the nominal column size.
     ph = ucPh.copy(); Lc = ucL.copy()
     # make phase monotonic decreasing for a clean inverse over the usable swing
     idx = np.argsort(ph)
@@ -152,7 +150,7 @@ def main():
 
     if mode in ('gradstrong','all'):
         P("\n=== ROUTE A-strong: forced large per-column size gradient (stress test) ===")
-        # Impose a strong MONOTONIC size taper across the 8 columns as a coded-aperture
+        # Impose a strong monotonic size taper across the 8 columns as a coded-aperture
         # phase gradient, ignoring the saturated uc_ref mapping. amp = peak-to-peak fraction.
         for t, amp in [(20, 0.30), (30, 0.50)]:
             sign = -np.sign(np.sin(np.radians(t)))   # taper direction toward +theta

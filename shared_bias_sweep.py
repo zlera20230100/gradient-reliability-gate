@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
-# Shared-bias sweep for the reliability-gated hybrid gradient: the noise across the M retrains has a
-# fraction rho of common (seed-shared) bias and 1-rho idiosyncratic. rho=0 is the i.i.d. case the gate
-# is designed for; rho->1 is the adversarial correlated-seed regime that defeats it. Shows WHERE the
-# frontier breaks (gate error climbs toward the all-autodiff error). Writes shared_bias_sweep.npz.
+# Shared-bias sweep for the reliability-gated hybrid gradient. Noise across the M retrains is a
+# fraction rho of common (seed-shared) bias and 1-rho idiosyncratic. rho=0 is the i.i.d. case;
+# rho->1 is the correlated-seed regime. Writes shared_bias_sweep.npz.
 import os
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
 import numpy as np
@@ -34,7 +33,7 @@ for rho in RHOS:
         nsel += (tt & tr).sum(); nrel += tr.sum()
     c, e, aa = np.mean(cost), np.mean(err), np.mean(allad)
     recov = 100 * nsel / max(1, nrel)
-    # "broken" when the gate no longer beats all-autodiff by a clear margin
+    # flag when gate error exceeds half the all-autodiff error
     flag = 'BREAKS' if e > 0.5 * aa else 'ok'
     rows.append((rho, c, 100 * (1 - c / K), e, aa, recov))
     print(f"{rho:>11.2f} | {c:>11.2f} {100*(1-c/K):>5.0f}% {e:>9.3f} | {aa:>10.3f} {recov:>9.0f}%  {flag}")

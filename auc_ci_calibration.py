@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-# Clustered bootstrap 95% CI for the controlled-spectrum reliability AUC at M=10 (the headline 0.96).
-# Resamples whole TRIALS (each trial = one sigma, 6 correlated zones) with replacement, so the CI
-# respects the within-trial correlation the reviewers flagged. Mirrors reliability_calib.py exactly.
+# Clustered bootstrap 95% CI for the controlled-spectrum reliability AUC at M=10.
+# Resamples whole trials (each trial = one sigma, 6 correlated zones) with replacement, so the CI
+# respects the within-trial correlation. Mirrors reliability_calib.py.
 import os
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
 import numpy as np
@@ -35,7 +35,7 @@ for name, X in [('sign-agreement', sa_blocks), ('SNR', snr_blocks)]:
     boot = []
     BRNG = np.random.default_rng(7)
     for _ in range(2000):
-        sel = BRNG.integers(0, N_TRIALS, N_TRIALS)         # resample TRIALS (clusters)
+        sel = BRNG.integers(0, N_TRIALS, N_TRIALS)         # resample trials (clusters)
         yy = lab_blocks[sel].ravel(); xx = X[sel].ravel()
         if len(np.unique(yy)) < 2:
             continue

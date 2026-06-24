@@ -1,25 +1,15 @@
 # -*- coding: utf-8 -*-
-# HARDER external thin-film TMM benchmark for the reliability gate (companion to extbench_tmm.py).
-#
-# WHY THIS FILE EXISTS (reviewer blocking point):
-#   In extbench_tmm.py the surrogate lands in a near-saturated regime (~97% of autodiff gradient
-#   components already sign-correct, base cosine-to-truth ~0.996), so the gate certifies almost
-#   everything and the constructive allocator has essentially nothing to save -- reviewers correctly
-#   note the allocator is "never shown to save solves on non-self-authored physics."
-#
-# WHAT WE CHANGE -- only the *problem* is made harder, along defensible/realistic axes; the surrogate
-# training recipe, the deep-ensemble sign-agreement gate, the allocator/ordering logic, the central-FD
-# ground truth and all metrics are reused UNCHANGED from extbench_tmm.py (no tuning-to-win):
-#   (1) FEWER surrogate training samples (NS=250 vs 600) -> realistic data scarcity, the regime in
-#       which a data-driven surrogate's gradient is least trustworthy.
-#   (2) A half-wave DEFECT in the centre of the stack -> a sharper near-band spectral feature.
-#   (3) Evaluate ON A FLANK of that feature (R~0.4) and let query points roam to +-10% -> mild
-#       extrapolation away from the training cloud, so a non-trivial minority of gradient components
-#       become sign-wrong (target window 15-40%, here ~20%) instead of the easy ~3%.
-# The TMM oracle math (characteristic-matrix product, normal incidence) is identical to extbench_tmm.py.
-# Writes extbench_tmm_hard.npz. Does NOT touch extbench_tmm.npz or any manuscript.
-#
-# CPU-only, tiny MLP; modest ensemble (M=10) and fixed seeds so it finishes quickly.
+# Harder external thin-film TMM benchmark for the reliability gate (companion to extbench_tmm.py).
+# extbench_tmm.py runs in a near-saturated regime (~97% of autodiff gradient components already
+# sign-correct, base cosine-to-truth ~0.996), so the allocator has little to save. Here the problem
+# is made harder; the surrogate training recipe, sign-agreement gate, allocator/ordering logic,
+# central-FD ground truth and all metrics are reused from extbench_tmm.py:
+#   (1) fewer surrogate training samples (NS=250 vs 600).
+#   (2) a half-wave defect in the centre of the stack -> sharper near-band feature.
+#   (3) evaluate on a flank of that feature (R~0.4), query points roam to +-10% -> mild
+#       extrapolation, ~20% of gradient components become sign-wrong instead of ~3%.
+# TMM oracle math is identical to extbench_tmm.py. Writes extbench_tmm_hard.npz.
+# CPU-only, tiny MLP, M=10, fixed seeds.
 import os
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
 os.environ.setdefault('OMP_NUM_THREADS', '3')
@@ -31,16 +21,16 @@ from sklearn.metrics import roc_auc_score
 
 LAM0 = 1550.0
 nH, nL, nsub, n0 = 2.35, 1.45, 1.52, 1.0
-# 11-layer quarter-wave stack (same dimensionality K as the easy bench) ...
+# 11-layer quarter-wave stack (same K as the easy bench)
 IDX = np.array([nH, nL] * 5 + [nH])
 QW = LAM0 / (4.0 * IDX)
 NOMINAL = QW.copy()
-# ... but with a HALF-WAVE DEFECT in the centre -> opens a sharper near-band resonance.
+# half-wave defect in the centre -> sharper near-band resonance
 NOMINAL[len(IDX) // 2] *= 2.0
 K = IDX.size
 
 def tmm_R(thick, lam):
-    # identical TMM oracle as extbench_tmm.py (characteristic-matrix product, normal incidence)
+    # TMM oracle: characteristic-matrix product, normal incidence
     M = np.eye(2, dtype=complex)
     for nj, dj in zip(IDX, thick):
         delta = 2.0 * np.pi * nj * dj / lam
@@ -50,8 +40,8 @@ def tmm_R(thick, lam):
     r = (n0 * B - C) / (n0 * B + C)
     return float(np.abs(r) ** 2)
 
-# sit on the flank of the (now sharper) defect feature, R~0.4 just above LAM0 -- same flank criterion
-# as extbench_tmm.py, but the feature is sharper so the local gradient is harder for the MLP to learn.
+# flank of the defect feature, R~0.4 just above LAM0; sharper feature makes the local gradient
+# harder for the MLP to learn.
 _scan = np.linspace(LAM0 - 80, LAM0 + 80, 1601)
 _Rs = np.array([tmm_R(NOMINAL, l) for l in _scan]); _up = _scan > LAM0
 LAM_EVAL = float(_scan[_up][np.argmin(np.abs(_Rs[_up] - 0.4))])
@@ -66,7 +56,7 @@ def tmm_grad_fd(thick, h=0.5):
     return g
 
 RNG = np.random.default_rng(7)
-NS = int(os.environ.get('NS', '250'))          # FEWER samples (data scarcity) vs 600 in easy bench
+NS = int(os.environ.get('NS', '250'))          # fewer samples than the 600 in the easy bench
 span = 0.30
 X = NOMINAL[None, :] * (1.0 + span * (2 * RNG.random((NS, K)) - 1))
 Y = np.array([tmm_R(x, LAM_EVAL) for x in X])
@@ -82,7 +72,7 @@ class MLP(nn.Module):
     def forward(self, x): return self.net(x)
 
 def train_one(seed):
-    # identical training recipe as extbench_tmm.py (NOT tuned to win on the harder problem)
+    # same training recipe as extbench_tmm.py
     torch.manual_seed(seed); g = torch.Generator().manual_seed(seed)
     net = MLP(); opt = torch.optim.Adam(net.parameters(), lr=2e-3); lossf = nn.MSELoss()
     n = Xt.size(0); idx = torch.randperm(n, generator=g); tr = idx[:int(0.9 * n)]
@@ -101,7 +91,7 @@ def ad_grad(net, xphys):
     y = net(xn); y.backward()
     return (xn.grad.detach().numpy().ravel()) * (ysd / xs)
 
-# query points roam to +-10% of the nominal stack -> mild extrapolation, a minority of sign-wrong comps
+# query points roam to +-10% of the nominal stack -> mild extrapolation
 NQ = 100
 QP = NOMINAL[None, :] * (1.0 + 0.10 * (2 * RNG.random((NQ, K)) - 1))
 TAU = 0.9
@@ -118,7 +108,7 @@ for q, xq in enumerate(QP):
     n_trust_at_tau.append(int((sa >= TAU).sum()))
     # allocator orderings: which components to FD-correct first
     order_gate = np.argsort(sa)                              # least reliable first (gate-driven)
-    order_orac = np.argsort(-np.abs(ad - fd))               # truly-worst first (oracle upper bound)
+    order_orac = np.argsort(-np.abs(ad - fd))               # worst first (oracle upper bound)
     for n in range(K + 1):
         g = ad.copy(); g[order_gate[:n]] = fd[order_gate[:n]]; cos_gate[q, n] = cossim(g, fd)
         g = ad.copy(); g[order_orac[:n]] = fd[order_orac[:n]]; cos_orac[q, n] = cossim(g, fd)

@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-# re-runs the reliability-gated hybrid-gradient cost-accuracy result under several noise models that differ
-# from the i.i.d.-Gaussian model used to define the reliability label, including a correlated-seed case
-# (shared bias across retrains). the reliability label is held fixed (population SNR |a|/sigma_scale >= 1);
-# only the sampling noise the ensemble sees is changed. writes hybrid_robust.npz.
+# Re-runs the reliability-gated hybrid-gradient cost-accuracy result under several noise models
+# other than i.i.d.-Gaussian, including a correlated-seed case (shared bias across retrains).
+# The reliability label is fixed (population SNR |a|/sigma_scale >= 1); only the sampling noise
+# the ensemble sees changes. Writes hybrid_robust.npz.
 import os
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
 import numpy as np
@@ -12,7 +12,7 @@ a_true = np.array([2.0, -1.5, 0.8, -0.6, 1.3, -0.9])
 K = a_true.size; M = 10; TAU = 0.9; N_TRIALS = 6000
 
 def draw(model, sigma):
-    """M-by-K seed gradients = signal + noise of given model & per-component scale sigma (std-matched)."""
+    """M-by-K seed gradients: signal + noise of given model and per-component scale sigma (std-matched)."""
     if model == 'gaussian':
         return RNG.normal(0.0, sigma[None, :], size=(M, K))
     if model == 'student_t':                      # heavy-tailed (df=3), scaled to std = sigma

@@ -1,60 +1,32 @@
 # -*- coding: utf-8 -*-
-# ============================================================================
-# CAPACITY- / COMPUTE-MATCHED MC-DROPOUT BASELINE (reviewer fairness control)
-# ============================================================================
-# Reviewer concern: the MC-dropout baseline is over-confident at every dropout
-# rate, but that could be a strawman unless (i) its architecture / capacity /
-# training schedule are MATCHED to a single deep-ensemble member, and (ii) the
-# dropout PLACEMENT (which layers carry Dropout) is documented and principled.
+# Capacity- and compute-matched MC-dropout baseline.
 #
-# This script removes both objections:
-#   * MATCHED MODEL    -- the network is the *identical* ZonePINN used by every
-#                         deep-ensemble member in zones_multiseed.py: the same
-#                         NearFieldNet(4+K, hidden=128, 4 layers) + FarFieldNet
-#                         (4+K, Fourier features -> hidden=256, 4 layers), the
-#                         same coord/output scaling, the same blending probe,
-#                         the same K=6 zone conditioning. No extra capacity.
-#   * MATCHED TRAINING -- identical optimiser (Adam, lr=1e-3), identical number
-#                         of iterations (N_ITERS, default 3000 = the ensemble's
-#                         per-member schedule), identical collocation counts and
-#                         loss weights, identical grad-clip (1.0), identical
-#                         random source/aperture sampling. A trained model here
-#                         is one ensemble member PLUS Dropout layers.
-#   * MATCHED COMPUTE  -- the number of stochastic forward passes T is set to
-#                         the deep-ensemble size M (read from zones_multiseed.npz,
-#                         M=10). Deep ensemble = M independently trained members;
-#                         MC-dropout = ONE trained member + M stochastic passes.
-#                         Both spend M test-time forward passes on the gradient,
-#                         so the uncertainty estimate is compute-matched.
+# Matched against a single deep-ensemble member:
+#   * Model    -- same ZonePINN as zones_multiseed.py: NearFieldNet(4+K, hidden=128,
+#                 4 layers) + FarFieldNet(4+K, Fourier features -> hidden=256, 4 layers),
+#                 same coord/output scaling, blending probe, K=6 zone conditioning.
+#   * Training -- same optimiser (Adam, lr=1e-3), iterations (N_ITERS, default 3000),
+#                 collocation counts, loss weights, grad-clip (1.0), and random
+#                 source/aperture sampling. The model here is one ensemble member plus
+#                 Dropout layers.
+#   * Compute  -- stochastic forward passes T set to ensemble size M (from
+#                 zones_multiseed.npz, M=10). Both spend M test-time forward passes.
 #
-# DROPOUT PLACEMENT (documented, see add_dropout / enable_mc_dropout):
-#   Dropout(p) is inserted AFTER every Tanh activation in the hidden trunk of
-#   BOTH sub-networks (NearFieldNet and FarFieldNet). With num_layers=4 each
-#   trunk has 3 Tanh activations, giving 3 Dropout layers per sub-net = 6 total.
-#   Dropout is deliberately NOT applied to:
-#     - the input / Fourier-feature encoding (keeps the high-frequency basis of
-#       FarFieldNet deterministic; dropping random Fourier columns would inject
-#       aliasing rather than epistemic uncertainty), and
-#     - the final output Linear of either sub-net (standard Gal & Ghahramani
-#       2016 practice: the read-out layer is kept deterministic so the MC spread
-#       reflects hidden-feature uncertainty, not output-weight masking).
-#   This is the canonical "dropout on every hidden layer" placement that makes
-#   MC-dropout a proper approximate-Bayesian posterior (Gal & Ghahramani, ICML
-#   2016), so the over-confidence we report is a property of the method, not of
-#   an adversarial placement choice.
+# Dropout placement (see add_dropout / enable_mc_dropout):
+#   Dropout(p) after every Tanh in the hidden trunk of both sub-networks. With
+#   num_layers=4 each trunk has 3 Tanh activations, so 3 Dropout layers per sub-net = 6.
+#   Not applied to the input/Fourier-feature encoding (keeps FarFieldNet's high-frequency
+#   basis deterministic) or to the final output Linear (Gal & Ghahramani 2016). This is
+#   the standard "dropout on every hidden layer" placement.
 #
-# OUTPUT: mcdropout_matched.npz with the SAME sign-agreement / SNR reliability
-#   indicators as the deep ensemble, and the SAME labelled AUC over-confidence
-#   diagnostic as reliability.py (responsive=reliable, null + real-radiation =
-#   unreliable), but with MC-dropout's radiation indicator substituted for the
-#   ensemble's. A fair baseline still flags the real-radiation gradient as
-#   UNTRUSTWORTHY only if its sign-agree drops below threshold; the paper's point
-#   is that even the matched MC-dropout does NOT (it stays over-confident).
+# Output: mcdropout_matched.npz with the same sign-agreement / SNR indicators as the
+#   deep ensemble and the same labelled AUC over-confidence diagnostic as reliability.py
+#   (responsive=reliable, null + real-radiation = unreliable), with MC-dropout's
+#   radiation indicator substituted for the ensemble's.
 #
 # Usage:  python mcdropout_matched.py [n_iters=3000] [p_drop=0.10]
-# Note: needs the project PINN framework (pinn_model.py, config.py, main.py),
-#       same as mcdropout.py / zones_multiseed.py.
-# ============================================================================
+# Needs the project PINN framework (pinn_model.py, config.py, main.py), same as
+# mcdropout.py / zones_multiseed.py.
 import os, sys, time, numpy as np, torch
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
 import torch.nn as nn
@@ -67,18 +39,18 @@ from config import FREQUENCY, EXCITATION_CONFIG, Z_INTERFACE, device
 from main import setup_environment, load_antenna_geometry
 from pinn_model import NearFieldNet, FarFieldNet, MaxwellEquationsMicrostrip
 
-# ---- match the deep-ensemble member training schedule exactly -------------
-N_ITERS = int(sys.argv[1]) if len(sys.argv) > 1 else 3000   # == ensemble per-member iters
+# ---- deep-ensemble member training schedule -------------------------------
+N_ITERS = int(sys.argv[1]) if len(sys.argv) > 1 else 3000   # ensemble per-member iters
 P_DROP  = float(sys.argv[2]) if len(sys.argv) > 2 else 0.10
 K = 6; G_LO, G_HI = 0.80, 1.20
 
-# ---- compute-matched: T stochastic passes == ensemble size M -------------
+# ---- compute-matched: T stochastic passes = ensemble size M --------------
 de_path = os.path.join(REPO, 'zones_multiseed.npz')
 if not os.path.exists(de_path):
     de_path = os.path.join(PAPER, 'zones_multiseed.npz')
 de = np.load(de_path)
 M_ENS = int(np.array(de['rela']).shape[0])                 # ensemble size M (=10)
-T_MC  = M_ENS                                              # <-- compute-matched
+T_MC  = M_ENS                                              # compute-matched
 print(f"device={device} N_ITERS={N_ITERS} p_drop={P_DROP} "
       f"M_ensemble={M_ENS} T_MC(matched)={T_MC} K={K}", flush=True)
 
@@ -101,7 +73,7 @@ def pack(m):
                 nx=T(b_normals[idx,0:1]),ny=T(b_normals[idx,1:2]),nz=T(b_normals[idx,2:3]))
 PEC=pack(mask_pec); ABC=pack(mask_abc)
 
-# ---- IDENTICAL ZonePINN as zones_multiseed.py (one ensemble member) -------
+# ---- ZonePINN, same as zones_multiseed.py (one ensemble member) ----------
 class ZonePINN(nn.Module):
     def __init__(self, scale, pp, zone, K):
         super().__init__()
@@ -132,17 +104,16 @@ class ZonePINN(nn.Module):
         return torch.clamp((mx*my).sum(1,keepdim=True),0.0,1.0)
 
 def add_dropout(seq, p):
-    # DOCUMENTED PLACEMENT: insert Dropout(p) after each Tanh in the hidden
-    # trunk; reuse the existing trained-capacity Linear layers unchanged. The
-    # output Linear (last module, not preceded by a Tanh here) gets NO dropout.
+    # insert Dropout(p) after each Tanh in the hidden trunk; reuse the existing
+    # Linear layers unchanged. The output Linear (not preceded by a Tanh) gets no dropout.
     new=[]
     for m in seq:
         new.append(m)
         if isinstance(m, nn.Tanh): new.append(nn.Dropout(p))
     return nn.Sequential(*new)
 def enable_mc_dropout(model):
-    # Gal & Ghahramani (2016): keep the whole model in eval() but switch ONLY
-    # the Dropout layers to train() so masks stay stochastic at test time.
+    # Gal & Ghahramani (2016): keep the model in eval() but switch the Dropout
+    # layers to train() so masks stay stochastic at test time.
     model.eval()
     for m in model.modules():
         if isinstance(m, nn.Dropout): m.train()
@@ -154,7 +125,7 @@ torch.manual_seed(0); np.random.seed(0)
 r=rad*np.sqrt(np.random.rand(n_src,1)); th=2*np.pi*np.random.rand(n_src,1)
 SRC_X=T((loc[0]+r*np.cos(th))*scale); SRC_Y=T((loc[1]+r*np.sin(th))*scale); SRC_Z=T(np.random.uniform(zmin,zmax,(n_src,1))*scale)
 
-# ---- build ONE matched member, then add the (documented) Dropout layers ---
+# ---- build one matched member, then add Dropout layers --------------------
 model=ZonePINN(scale,pp,zone,K).to(device)
 model.near_net.net=add_dropout(model.near_net.net, P_DROP).to(device)
 model.far_net.net =add_dropout(model.far_net.net, P_DROP).to(device)
@@ -195,7 +166,7 @@ for it in range(1,N_ITERS+1):
         print(f"  it {it:5d}/{N_ITERS} tot {float(total):.2e} all {float(l_all):.2e} ({(time.time()-t0)/it*1000:.0f}ms/it)", flush=True)
 train_sec=time.time()-t0
 
-# ---- MC-dropout sampling of the per-zone Jacobian (T_MC == M passes) ------
+# ---- MC-dropout sampling of the per-zone Jacobian (T_MC = M passes) -------
 nft=4096
 rr=torch.sqrt(torch.tensor(0.00015**2,device=device)+(0.00025**2-0.00015**2)*torch.rand(nft,1,device=device))
 ang=2*np.pi*torch.rand(nft,1,device=device)
@@ -228,14 +199,10 @@ print(f"  per-zone DE sign-agree: {np.round(sa_de,2)}")
 print(f"  full-wave verdict: radiation gradient UNRELIABLE (sign-match 3/6). Trust threshold 0.9.")
 print(f"  -> matched MC-dropout flags distrust? {(sa_mc.mean()<0.9)}   deep ensemble flags distrust? {(sa_de.mean()<0.9)}")
 
-# ---- same labelled AUC over-confidence diagnostic as reliability.py -------
-#   responsive (synthetic, known reliable) = label 1
-#   null (synthetic, known unreliable) + real-radiation = label 0
-#   Score = the cheap reliability indicator; an over-confident method gives the
-#   real-radiation block a HIGH indicator, dragging AUC down (cannot separate
-#   reliable from unreliable). We compute AUC twice: once using the deep
-#   ensemble's radiation indicator, once substituting MC-dropout's, to isolate
-#   the effect of the over-confident MC posterior on the diagnostic.
+# ---- labelled AUC over-confidence diagnostic, as in reliability.py --------
+#   responsive (reliable) = label 1; null + real-radiation = label 0.
+#   Score = the reliability indicator. AUC computed twice: with the deep
+#   ensemble's radiation indicator, then with MC-dropout's substituted.
 auc_mc_sign = auc_mc_snr = auc_de_sign = auc_de_snr = float('nan')
 try:
     from sklearn.metrics import roc_auc_score

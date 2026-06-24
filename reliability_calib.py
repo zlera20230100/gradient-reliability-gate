@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-# Monte-Carlo over a controlled reliability spectrum: a known per-zone gradient a_true observed through M
-# independently-retrained seeds with epistemic noise sigma. ground-truth per-zone reliability is whether the
-# signal dominates the noise (true SNR |a_k|/sigma >= 1). measures how well the ensemble indicator from M
-# seeds predicts that ground truth and how the AUC varies with M. writes reliability_calib.npz.
+# Monte-Carlo over a controlled reliability spectrum: a known per-zone gradient a_true observed
+# through M independently-retrained seeds with epistemic noise sigma. Ground-truth per-zone
+# reliability is true SNR |a_k|/sigma >= 1. Measures how well the ensemble indicator from M seeds
+# predicts that, and how AUC varies with M. Writes reliability_calib.npz.
 import os
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
 import numpy as np

@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
-# Clustered bootstrap 95% CI for the LABEL-DECOUPLED reliability AUC (outcome label = ensemble-mean sign
-# correct vs full-wave truth). Mirrors hybrid_decouple.py; resamples whole trials. This is the
-# circularity-free statistic the reviewers asked to be promoted to primary.
+# Clustered bootstrap 95% CI for the label-decoupled reliability AUC (outcome label = ensemble-mean
+# sign correct vs full-wave truth). Mirrors hybrid_decouple.py; resamples whole trials.
 import os
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
 import numpy as np

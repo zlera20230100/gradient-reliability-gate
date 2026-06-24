@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
-# Synthetic trust-step-verify testbed with a cheap exact oracle. All K components affect the
-# objective, but some are poorly identifiable from the data (weakly excited + label noise), so
-# the surrogate gradient there is large per-model yet sign-unstable across seeds. Compares a
-# single-model gradient step (all components) against an ensemble gate that steps only the
-# sign-stable components, scored on the oracle objective.
+# Trust-step-verify testbed with a cheap exact oracle. All K components affect the objective;
+# some are poorly identifiable (weakly excited + label noise), so the surrogate gradient there
+# is large per-model but sign-unstable across seeds. Compares a single-model gradient step (all
+# components) against an ensemble gate that steps only the sign-stable components, scored on the
+# oracle objective.
 import os
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
 import numpy as np, torch, torch.nn as nn

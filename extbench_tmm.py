@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
-# tests the reliability gate on a thin-film multilayer Fabry-Perot benchmark computed by the transfer-matrix
-# method (TMM). a data-driven surrogate's autodiff gradient often has the correct sign but an inaccurate
-# magnitude, so we test whether ordering components by sign-agreement and FD-correcting the flagged ones
-# first recovers the descent direction (cosine to the TMM gradient) with fewer solves than random ordering.
-# ground truth = central FD on the TMM oracle; gate = deep-ensemble per-component sign-agreement.
-# writes extbench_tmm.npz.
+# Reliability gate on a thin-film multilayer Fabry-Perot benchmark via the transfer-matrix method
+# (TMM). The surrogate's autodiff gradient often has the right sign but wrong magnitude; tests
+# whether ordering components by sign-agreement and FD-correcting the flagged ones first recovers
+# the descent direction (cosine to the TMM gradient) with fewer solves than random ordering.
+# Ground truth = central FD on the TMM oracle; gate = deep-ensemble per-component sign-agreement.
+# Writes extbench_tmm.npz.
 import os
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
 import numpy as np

@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
-# builds a reliability-gated hybrid design gradient: use the autodiff (deep-ensemble mean) estimate on
-# components the gate trusts, and one full-wave finite-difference (FD) solve on the rest.
-# (1) controlled reliability spectrum (same model as reliability_calib.py): traces the cost-accuracy
-#     frontier and compares the gate's subset against the oracle subset.
-# (2) real 24-GHz FPC device: applies the gate to the six radiation zones and the impedance direction.
-# writes hybrid_gradient.npz.
+# Reliability-gated hybrid design gradient: autodiff (deep-ensemble mean) on the components the
+# gate trusts, one full-wave finite-difference (FD) solve on the rest.
+# (1) controlled reliability spectrum (same model as reliability_calib.py): cost-accuracy frontier,
+#     gate subset vs oracle subset.
+# (2) 24-GHz FPC device: gate applied to the six radiation zones and the impedance direction.
+# Writes hybrid_gradient.npz.
 import os
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
 import numpy as np

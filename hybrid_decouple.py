@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
-# two checks on the reliability gate:
-#  (A) label-decoupled validation: label a component reliable by the operational outcome (whether the
-#      autodiff ensemble mean has the correct sign against the full-wave truth a_true) rather than by
-#      population SNR |a|/sigma>=1, and measure how well sign-agreement predicts it.
-#  (B) compares the sign-agreement gate against an ensemble-variance (SNR) gate at matched cost.
-# writes hybrid_decouple.npz.
+# Two checks on the reliability gate:
+#  (A) label-decoupled validation: label a component reliable by the operational outcome (whether
+#      the autodiff ensemble mean has the correct sign against a_true) rather than by population
+#      SNR |a|/sigma>=1, and measure how well sign-agreement predicts it.
+#  (B) sign-agreement gate vs ensemble-variance (SNR) gate at matched cost.
+# Writes hybrid_decouple.npz.
 import os
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
 import numpy as np

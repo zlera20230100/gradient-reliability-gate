@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-# Bootstrap 95% CIs for the reliability AUCs that can be computed from existing saved arrays:
+# Bootstrap 95% CIs for the reliability AUCs from saved arrays:
 #  (1) the n=18 labelled device set (reliability.npz), and
 #  (2) the external thin-film TMM benchmark (extbench_tmm.npz: all_sa score vs all_correct label),
-# plus the external-benchmark class balance. No model retraining needed.
+# plus the external-benchmark class balance. No retraining.
 import os
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
 import numpy as np
