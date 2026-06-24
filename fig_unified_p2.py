@@ -274,9 +274,9 @@ def make_remedy():
     fig, ax = plt.subplots(figsize=(7.2, 4.3))
     for yi, (lab, v, c) in zip(y, remedies):
         if v is None:
-            ax.text(0, yi, '  unstable (omitted)', va='center', ha='left',
-                    fontsize=9, color=NEU, style='italic')
             ax.plot(0, yi, 'x', color=NEU, ms=7)
+            ax.text(4.5, yi, 'unstable (omitted)', va='center', ha='left',
+                    fontsize=9, color=NEU, style='italic')
         else:
             ax.barh(yi, v, color=ACC if abs(v) > 50 else SIG, height=0.6)
             ax.text(v + (1.5 if v >= 0 else -1.5), yi, f'{v:+d}',
