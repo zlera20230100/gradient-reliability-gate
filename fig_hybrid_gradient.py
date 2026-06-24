@@ -52,8 +52,8 @@ b.text(K + 0.5, tau + 0.008, f'trust threshold {tau}', ha='right', va='bottom', 
 b.set_xticks(x); b.set_xticklabels([f'z{i}' for i in x])
 b.set_xlabel('radiation zone (real 24-GHz FPC)')
 b.set_ylabel('ensemble sign-agreement (10 seeds)')
-b.set_ylim(0.45, 1.0)
-b.text(0.5, 0.965,
+b.set_ylim(0.45, 1.18)
+b.text(0.03, 0.985,
        f"all {K}/{K} zones < threshold $\\Rightarrow$ FD on all\n"
        f"naive autodiff shortcut: only {int(d['dev_signmatch'])}/{K} signs correct,\n"
        f"{float(d['dev_naive_relerr']):.1f}$\\times$ the full-wave magnitude\n"

@@ -157,7 +157,7 @@ def make_forward():
     a.set_xlim(-90, 90); a.set_xlabel(r'$\theta$ (deg)')
     a.set_ylabel('directivity (dBi)')
     a.grid(alpha=0.25)
-    a.legend(frameon=False, loc='upper left', fontsize=8.5, borderaxespad=0.4)
+    a.legend(frameon=False, loc='upper right', fontsize=8.5, borderaxespad=0.4)
     panel_label(a, '(a)')
 
     cd = np.load(os.path.join(DIR, 'closure_directive.npz'), allow_pickle=True)
@@ -170,8 +170,6 @@ def make_forward():
     b.bar(range(len(order)), s11, color=grp, width=0.7)
     mean = np.mean(s11)
     b.axhline(mean, ls=':', color='#222', lw=1.2)
-    b.text(len(order) - 0.5, mean + 0.12,
-           f'span {max(s11) - min(s11):.1f} dB', ha='right', color='#222', fontsize=9)
     b.legend(handles=[mpatches.Patch(color=NEU, label='uniform'),
                       mpatches.Patch(color=SIG, label='phase-gradient codes'),
                       mpatches.Patch(color=ACC, label='surrogate codes')],

@@ -34,9 +34,9 @@ a.text(0.96, 0.07, f'AUC $=$ {auc:.2f}', ha='right', va='bottom', fontsize=12,
 a.text(0.78, 0.70, 'chance', rotation=45, rotation_mode='anchor',
        color='0.55', fontsize=8, va='bottom', ha='center')
 a.set_xlabel('false positive rate'); a.set_ylabel('true positive rate')
-a.set_xlim(0, 1); a.set_ylim(0, 1); a.set_aspect('equal', adjustable='box')
+a.set_xlim(0, 1); a.set_ylim(0, 1.02)
 a.set_xticks([0, 0.5, 1]); a.set_yticks([0, 0.5, 1])
-a.set_title('(a) gate predicts sign-reliability (external TMM)',
+a.set_title('(a) ROC on the external TMM benchmark',
             loc='left', fontsize=9.0, fontweight='bold')
 
 # (b) separation -- trusted band, jittered points, and a coloured mean line per group
@@ -61,7 +61,7 @@ b.text(0.5, 0.035,
        rf'$\tau={tau}$: ${ntr:.1f}/{K}$ trusted $\Rightarrow$ hybrid follows the free gradient '
        rf'(cosine {cos_ad:.3f}) at $<\!1$ solve/grad',
        transform=b.transAxes, fontsize=7.4, va='bottom', ha='center', color='0.35')
-b.set_title('(b) reliable vs. unreliable gradient components', loc='left',
+b.set_title('(b) reliable vs. unreliable components', loc='left',
             fontsize=9.0, fontweight='bold')
 
 fig.tight_layout()

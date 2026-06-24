@@ -44,7 +44,7 @@ b.errorbar(range(3), pts, yerr=[np.array(pts) - np.array(los), np.array(his) - n
            fmt='none', ecolor='k', elinewidth=1.0, capsize=4, zorder=5)
 for i, v in enumerate(pts):
     b.text(i, min(v + 0.02, 1.04), f'{v:.3f}', ha='center', va='bottom', fontsize=8.5)
-b.axhline(0.5, color='0.5', ls=':', lw=1.0); b.text(2.45, 0.515, 'chance', ha='right', fontsize=7.6, color='0.4')
+b.axhline(0.5, color=ACC, ls=':', lw=1.1); b.text(2.45, 0.52, 'chance', ha='right', va='bottom', fontsize=7.8, color=ACC)
 b.set_xticks(range(3)); b.set_xticklabels(names, fontsize=8.4)
 b.set_ylabel('reliability AUC (95% CI, $n{=}18$)'); b.set_ylim(0.0, 1.12)
 b.set_title('(b) predicts the full-wave verdict, no solver', loc='left', fontsize=9.2, fontweight='bold')
