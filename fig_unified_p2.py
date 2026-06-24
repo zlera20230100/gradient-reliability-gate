@@ -157,7 +157,8 @@ def make_forward():
     a.set_xlim(-90, 90); a.set_xlabel(r'$\theta$ (deg)')
     a.set_ylabel('directivity (dBi)')
     a.grid(alpha=0.25)
-    a.legend(frameon=False, loc='upper right', fontsize=8.5, borderaxespad=0.4)
+    a.set_ylim(-11, 14)  # headroom so the legend clears the main-beam peak
+    a.legend(frameon=False, loc='upper right', fontsize=8.5, borderaxespad=0.15)
     panel_label(a, '(a)')
 
     cd = np.load(os.path.join(DIR, 'closure_directive.npz'), allow_pickle=True)
